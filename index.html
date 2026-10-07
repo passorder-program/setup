@@ -814,7 +814,7 @@ function updateUI(){
   const bar=document.getElementById('progressBar');
   const foot=document.getElementById('foot');
 
-  backBtn.style.display = (hist.length && cur!=='done' && cur!=='callreq') ? '' : 'none';
+  backBtn.style.display = (hist.length && cur!=='done') ? '' : 'none';
   titleEl.textContent = f ? f.title : '';
   foot.style.display = (cur==='done'||cur==='callreq') ? 'none' : '';
 
