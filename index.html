@@ -1146,9 +1146,10 @@ function payload(){
     lastStepReached: lastDone?lastDone.label:null,
     lastStepId: lastDone?lastDone.id:null,
     callSegment: (S.callSubmittedAt && !FLOW.some(f=>S.steps[f.id])) ? '전체안내필요'
-                 : stuck.length ? '부분안내:'+stuck.map(f=>f.label).join(', ')
+                 : stuck.length ? '부분안내'
                  : S.finishedAt ? '마무리콜' : '진행중',
     callSubmittedAt:S.callSubmittedAt||null,
+    callRequested:!!(S.callRequested||S.callSubmittedAt),
     preferredTime:S.when,
     printerTestResult:S.print.result||null,
     steps:FLOW.map(f=>({id:f.id,label:f.label,status:S.steps[f.id]?.status||'미진행',
