@@ -1142,9 +1142,10 @@ function payload(){
             : S.finishedAt ? (stuck.length?'부분완료':'완료')
             : FLOW.some(f=>S.steps[f.id]) ? '진행중'
             : S.callSubmittedAt ? '전화요청' : '진행중',
-    lastStepReached: lastDone?lastDone.id:null,
+    lastStepReached: lastDone?lastDone.label:null,
+    lastStepId: lastDone?lastDone.id:null,
     callSegment: (S.callSubmittedAt && !FLOW.some(f=>S.steps[f.id])) ? '전체안내필요'
-                 : stuck.length ? '부분안내:'+stuck.map(f=>f.id).join(',')
+                 : stuck.length ? '부분안내:'+stuck.map(f=>f.label).join(', ')
                  : S.finishedAt ? '마무리콜' : '진행중',
     callSubmittedAt:S.callSubmittedAt||null,
     preferredTime:S.when,
