@@ -790,7 +790,7 @@ function show(id,push){
   }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  cur=id; hideStuck(); clearErrs(); applyWhenChips();
+  cur=id; S.lastScreen=id; hideStuck(); clearErrs(); applyWhenChips();
   const prev=document.getElementById('c3Prev'); if(prev) prev.classList.toggle('hide', !(id==='c3' && S.when));
   updateUI(); window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -866,13 +866,12 @@ function isReady(id){
 
 /* ═══ 진행 ═══ */
 function goHome(){
-  hist=[]; S.finishedAt=null; save();
+  hist=[]; save();
   document.getElementById('bottomBar').style.display='';
   show('intro', false);
 }
 function startFlow(){
   if(!S.mode){ showErr('modeErr'); return; }
-  S.finishedAt=null;
   S.startedAt=S.startedAt||new Date().toISOString(); save();
   show(S.mode==='call' ? 'callreq' : FLOW[0].id);
 }
@@ -1041,7 +1040,7 @@ function renderDone(){
 }
 function submitCall(){
   if(!S.when){ showErr('callErr'); return; }
-  S.mode='call'; S.finishedAt=new Date().toISOString(); save();
+  S.mode='call'; S.callSubmittedAt=S.callSubmittedAt||new Date().toISOString(); save();
   document.getElementById('bottomBar').style.display='none';
   document.getElementById('callTitle').textContent='요청이 접수됐습니다';
   document.getElementById('callSub').textContent='담당자가 선택하신 시간대에 매장으로 연락드리겠습니다. 감사합니다.';
@@ -1139,11 +1138,15 @@ function payload(){
   return {
     storeName:S.store.name, storeCode:S.store.code,
     mode:S.mode, openedAt:S.firstSeenAt||S.startedAt, startedAt:S.startedAt, finishedAt:S.finishedAt,
-    status: !S.startedAt ? '열람만' : S.mode==='call'?'전화요청'
-            : !S.finishedAt?'진행중' : stuck.length?'부분완료':'완료',
+    status: !S.startedAt ? '열람만'
+            : S.finishedAt ? (stuck.length?'부분완료':'완료')
+            : FLOW.some(f=>S.steps[f.id]) ? '진행중'
+            : S.callSubmittedAt ? '전화요청' : '진행중',
     lastStepReached: lastDone?lastDone.id:null,
-    callSegment: S.mode==='call' ? '전체안내필요'
-                 : stuck.length ? '부분안내:'+stuck.map(f=>f.id).join(',') : '콜불필요',
+    callSegment: (S.callSubmittedAt && !FLOW.some(f=>S.steps[f.id])) ? '전체안내필요'
+                 : stuck.length ? '부분안내:'+stuck.map(f=>f.id).join(',')
+                 : S.finishedAt ? '마무리콜' : '진행중',
+    callSubmittedAt:S.callSubmittedAt||null,
     preferredTime:S.when,
     printerTestResult:S.print.result||null,
     steps:FLOW.map(f=>({id:f.id,label:f.label,status:S.steps[f.id]?.status||'미진행',
@@ -1156,7 +1159,7 @@ function payload(){
 }
 function startSelfAfterCall(){
   S.callRequested = true;       /* 전화 요청은 유지 */
-  S.finishedAt = null;
+  pickMode('self');             /* 이제부터는 직접 진행 */
   S.startedAt = S.startedAt || new Date().toISOString();
   save();
   document.getElementById('bottomBar').style.display='';
@@ -1216,15 +1219,12 @@ function applyStoreName(name){
   if(devMode){
     try{ localStorage.removeItem(KEY); }catch(e){}
   } else {
-    /* 새로고침해도 하던 곳부터 이어지도록 */
-    const touched = FLOW.some(f=>S.steps[f.id]);
-    if(S.finishedAt && S.mode==='call' && !touched){
-      show('callreq'); submitCall();
-    } else if(S.finishedAt){
-      renderDone(); show('done');
-    } else if(S.startedAt){
-      const next = FLOW.find(f=>!S.steps[f.id]);
-      show(next ? next.id : FLOW[FLOW.length-1].id);
+    /* 새로고침해도 마지막에 보던 화면으로 */
+    const last = S.lastScreen;
+    if(last && last!=='intro'){
+      if(last==='callreq'){ show('callreq',false); if(S.callSubmittedAt && S.when) submitCall(); }
+      else if(last==='done'){ renderDone(); show('done',false); }
+      else if(document.getElementById(last)){ show(last,false); }
     }
   }
 })();
