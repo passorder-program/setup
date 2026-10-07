@@ -620,6 +620,7 @@ pre.payload{background:#FAFAFA;border:1px solid #f0f0f0;border-radius:10px;paddi
 
       <div class="section-label">언제가 편하실까요?</div>
       <div class="page-sub" style="margin-bottom:12px">파트너지원팀 운영 시간은 평일 <b>08:00 ~ 16:30</b>이며, 점심시간(12:30~13:30)은 제외됩니다.</div>
+      <div class="page-sub hide" id="c3Prev" style="margin:-6px 0 12px;color:#EF6820;font-weight:700">이전에 선택하신 시간이 표시되어 있습니다. 그대로 두시거나 다른 시간을 골라주세요.</div>
       <div class="chip-group">
           <div class="chip" onclick="pickChip(this,'when','08:00~09:00')">08:00~09:00</div>
           <div class="chip" onclick="pickChip(this,'when','09:00~10:00')">09:00~10:00</div>
@@ -775,6 +776,13 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} refr
 
 /* ═══ 화면 전환 ═══ */
 const USE_HISTORY = (function(){ try{ return window.top === window.self; }catch(e){ return false; } })();
+/* 통화 시간 칩: 저장된 값이 있으면 선택된 상태로 표시 */
+function applyWhenChips(){
+  document.querySelectorAll('.chip[onclick*="\'when\'"]').forEach(c=>{
+    const m=(c.getAttribute('onclick')||'').match(/'when','([^']+)'/);
+    c.classList.toggle('selected', !!(m && S.when && m[1]===S.when));
+  });
+}
 function show(id,push){
   if(push!==false && cur!==id){
     hist.push(cur);
@@ -782,7 +790,9 @@ function show(id,push){
   }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  cur=id; hideStuck(); clearErrs(); updateUI(); window.scrollTo({top:0,behavior:'smooth'});
+  cur=id; hideStuck(); clearErrs(); applyWhenChips();
+  const prev=document.getElementById('c3Prev'); if(prev) prev.classList.toggle('hide', !(id==='c3' && S.when));
+  updateUI(); window.scrollTo({top:0,behavior:'smooth'});
 }
 function goBack(){
   if(!hist.length) return;
