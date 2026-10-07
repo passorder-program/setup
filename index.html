@@ -892,6 +892,7 @@ function validate(id){
     if(!S.print.result){ showErr('a4Err'); return false; }
     if(S.print.result==='no'){
       S.steps['a4']={status:'stuck',item:'프린터 설정',reason:'설정이 어려워 건너뜀',at:new Date().toISOString()};
+      S.callRequested=true;
       save(); show(FLOW[idx('a4')+1].id); return false;
     }
   }
