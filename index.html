@@ -172,6 +172,9 @@ body{font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;b
 .stuck-done-t{font-size:16px;font-weight:800;color:#333;margin-bottom:6px}
 .stuck-done-s{font-size:13.5px;color:#777;line-height:1.6;word-break:keep-all}
 
+.home-link{display:block;width:100%;margin-top:14px;background:none;border:none;color:#aaa;font-size:13px;font-weight:600;font-family:inherit;text-decoration:underline;cursor:pointer;padding:6px}
+.home-link:hover{color:#EF6820}
+
 /* 완료 */
 .done-hero{text-align:center;padding:36px 0 10px}
 .done-ico{width:62px;height:62px;border-radius:50%;background:#EF6820;color:#fff;font-size:30px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
@@ -671,6 +674,7 @@ pre.payload{background:#FAFAFA;border:1px solid #f0f0f0;border-radius:10px;paddi
         <div class="section-label" style="margin-top:28px">기다리시는 동안</div>
         <div class="page-sub" style="margin-bottom:14px">설치 방법을 미리 보실 수 있습니다. 해두신 만큼 통화가 짧아집니다.</div>
         <button class="btn btn-ghost" style="width:100%;flex:none" onclick="startSelfAfterCall()">직접 해볼게요</button>
+        <button class="home-link" onclick="goHome()">처음 화면으로 돌아가기</button>
       </div>
     </div>
 
@@ -695,7 +699,7 @@ const FLOW = [
   {id:'a1', part:0, title:'프로그램 설치',  label:'프로그램 설치'},
   {id:'a2', part:0, title:'계정 로그인',    label:'계정 로그인'},
   {id:'a3', part:0, title:'영업시간 설정',  label:'영업시간 설정'},
-  {id:'a4', part:0, title:'인쇄 설정',      label:'인쇄 설정'},
+  {id:'a4', part:0, title:'프린터 설정',    label:'프린터 설정'},
   {id:'b1', part:1, title:'주문 접수 방법', label:'주문 접수 방법'},
   {id:'b2', part:1, title:'핵심 기능',      label:'핵심 기능'},
   {id:'b3', part:1, title:'사장님 페이지',  label:'사장님 페이지'},
@@ -723,14 +727,20 @@ const ITEMS = {
 const REASONS = ['화면에 그 메뉴가 안 보여요','어떻게 하는지 모르겠어요','해봤는데 안 돼요'];
 
 /* ═══ 상태 ═══ */
-const KEY='po-usage-v1';
 const qs=new URLSearchParams(location.search);
+/* 매장(식별자)마다 따로 저장해서 테스트 기록이 섞이지 않도록 */
+const KEY='po-usage-v1' + (qs.get('s') ? ':'+qs.get('s') : '');
 let S=loadState(), cur='intro', hist=[];
 
 function loadState(){
   let base={store:{name:qs.get('n')||'',code:qs.get('s')||''},mode:null,steps:{},
             hours:{},print:{},when:null,checks:{},locks:{},startedAt:null,finishedAt:null};
   try{const r=localStorage.getItem(KEY); if(r){base=Object.assign(base,JSON.parse(r));}}catch(e){}
+  /* URL에 식별자·매장명이 있으면 저장된 값보다 우선 */
+  if(qs.get('s')) base.store = Object.assign({}, base.store, {code: qs.get('s')});
+  if(qs.get('n')) base.store = Object.assign({}, base.store, {name: qs.get('n')});
+  /* 최초 열람 시각: 페이지를 처음 연 순간 */
+  if(!base.firstSeenAt) base.firstSeenAt = new Date().toISOString();
   return base;
 }
 /* ═══════════════════════════════════════════════════════
@@ -817,7 +827,7 @@ function renderBottom(){
   if(cur==='intro'){
     b.innerHTML=`<button class="btn btn-primary" onclick="startFlow()">시작하기</button>`;
   } else if(cur==='done'){
-    b.innerHTML=`<button class="btn btn-ghost" style="flex:1" onclick="show(FLOW[0].id)">다시 보기</button>`;
+    b.innerHTML=`<button class="btn btn-ghost" style="flex:1" onclick="goHome()">처음 화면으로</button>`;
   } else if(cur==='callreq'){
     b.innerHTML=`<button class="btn btn-primary" onclick="submitCall()">요청 보내기</button>`;
   } else if(cur==='c3'){
@@ -830,8 +840,14 @@ function renderBottom(){
 }
 
 /* ═══ 진행 ═══ */
+function goHome(){
+  hist=[]; S.finishedAt=null; save();
+  document.getElementById('bottomBar').style.display='';
+  show('intro', false);
+}
 function startFlow(){
   if(!S.mode){ showErr('modeErr'); return; }
+  S.finishedAt=null;
   S.startedAt=S.startedAt||new Date().toISOString(); save();
   show(S.mode==='call' ? 'callreq' : FLOW[0].id);
 }
@@ -1081,8 +1097,8 @@ function payload(){
   const lastDone=FLOW.filter(f=>S.steps[f.id]).slice(-1)[0];
   return {
     storeName:S.store.name, storeCode:S.store.code,
-    mode:S.mode, openedAt:S.startedAt, finishedAt:S.finishedAt,
-    status: !S.startedAt?'미시작' : S.mode==='call'?'전화요청'
+    mode:S.mode, openedAt:S.firstSeenAt||S.startedAt, startedAt:S.startedAt, finishedAt:S.finishedAt,
+    status: !S.startedAt ? '열람만' : S.mode==='call'?'전화요청'
             : !S.finishedAt?'진행중' : stuck.length?'부분완료':'완료',
     lastStepReached: lastDone?lastDone.id:null,
     callSegment: S.mode==='call' ? '전체안내필요'
@@ -1090,7 +1106,7 @@ function payload(){
     preferredTime:S.when,
     printerTestResult:S.print.result||null,
     steps:FLOW.map(f=>({id:f.id,label:f.label,status:S.steps[f.id]?.status||'미진행',
-      item:S.steps[f.id]?.item||null,reason:S.steps[f.id]?.reason||null,when:S.steps[f.id]?.when||null,note:S.steps[f.id]?.note||null})),
+      item:S.steps[f.id]?.item||null,reason:S.steps[f.id]?.reason||null,when:S.steps[f.id]?.when||null,note:S.steps[f.id]?.note||null,at:S.steps[f.id]?.at||null})),
     deferred:S.deferred||null,
     checks:S.checks,
     menuVerifiedFirstAt:(S.locks&&S.locks.menuVerified)||null,
