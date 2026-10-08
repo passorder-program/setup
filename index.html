@@ -688,6 +688,7 @@ pre.payload{background:#FAFAFA;border:1px solid #f0f0f0;border-radius:10px;paddi
 
   <div class="foot" id="foot">
     <p id="footTxt">막히는 단계에서 언제든 도움을 요청하실 수 있어요. <b>'도움 요청'</b> 버튼을 눌러주세요.</p>
+    <button class="home-link hide" id="footHome" onclick="goHome()">처음 화면으로 돌아가기</button>
     <pre class="payload hide" id="payload"></pre>
   </div>
 </div>
@@ -795,9 +796,14 @@ function show(id,push){
   updateUI(); window.scrollTo({top:0,behavior:'smooth'});
 }
 function goBack(){
-  if(!hist.length) return;
-  if(USE_HISTORY){ try{ history.back(); return; }catch(e){} }
-  const p=hist.pop(); show(p,false);
+  if(hist.length){
+    if(USE_HISTORY){ try{ history.back(); return; }catch(e){} }
+    const p=hist.pop(); show(p,false); return;
+  }
+  /* 이어보기 등으로 기록이 없을 때: 바로 앞 단계로 */
+  const i=idx(cur);
+  if(i>0) show(FLOW[i-1].id,false);
+  else show('intro',false);
 }
 if(USE_HISTORY){
   window.addEventListener('popstate', function(){
@@ -814,9 +820,10 @@ function updateUI(){
   const bar=document.getElementById('progressBar');
   const foot=document.getElementById('foot');
 
-  backBtn.style.display = (hist.length && cur!=='done') ? '' : 'none';
+  backBtn.style.display = (cur!=='intro' && cur!=='done') ? '' : 'none';
   titleEl.textContent = f ? f.title : '';
   foot.style.display = (cur==='done'||cur==='callreq') ? 'none' : '';
+  const fh=document.getElementById('footHome'); if(fh) fh.classList.toggle('hide', !f);
 
   if(f){
     const inPart=FLOW.filter(x=>x.part===f.part);
