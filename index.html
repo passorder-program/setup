@@ -986,7 +986,7 @@ function validate(id){
     /* 모바일: 프린터는 담당자 확인 → 체크 후 자동으로 확인필요 기록 */
     const box=document.querySelector('#a4Mobile .check-item');
     if(!box.classList.contains('on')){ showErr('a4Err'); return false; }
-    S.steps['a4']={status:'stuck',item:'프린터 설정(태블릿·아이패드)',reason:'담당자 확인 필요',at:new Date().toISOString()};
+    S.steps['a4']={status:'stuck',item:'태블릿·아이패드',reason:'담당자 확인 필요',at:new Date().toISOString()};
     S.callRequested=true; save();
     show(FLOW[idx('a4')+1].id); return false;
   }
@@ -1155,6 +1155,14 @@ function submitCall(){
 
 /* ═══ 기기 선택 ═══ */
 function pickDevice(dev){
+  /* 기기가 바뀌면 프린터 단계 기록 초기화 (기기마다 프린터 화면이 달라서) */
+  if(S.device && S.device!==dev){
+    delete S.steps['a4']; S.print={};
+    const mb=document.querySelector('#a4Mobile .check-item'); if(mb) mb.classList.remove('on');
+    S.checks.a4_mobile_ok=false;
+    ['pr-ok','pr-no'].forEach(id=>{const e=document.getElementById(id); if(e) e.classList.remove('selected');});
+    const ok=document.getElementById('prOkBox'); if(ok) ok.classList.add('hide');
+  }
   S.device = dev; save(); applyDevice(dev); clearErrs(); renderBottom();
   const blk = document.getElementById(dev==='android'?'a1Android':dev==='ios'?'a1Ios':'a1Windows');
   if(blk) blk.scrollIntoView({behavior:'smooth',block:'start'});
