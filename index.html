@@ -1669,12 +1669,15 @@ function applyStoreName(name){
     const dev={'윈도우':'windows','안드로이드':'android','iOS':'ios'}[d.device];
     if(dev && !S.device){ S.device=dev; applyDevice(dev); }
     if(d.printer==='완료' && !(S.print&&S.print.result)){ S.print=S.print||{}; S.print.result='ok'; }
+    const wasDone = d.status==='완료';                           // 이미 모두 완료한 매장
+    if(wasDone) S.finishedAt=S.finishedAt||now;
     save(); applyChecks(); applyLocks();
     const next=FLOW[upto+1];
-    show(next?next.id:FLOW[upto].id,false);
+    if(wasDone){ renderDone(); show('done',false); }
+    else show(next?next.id:FLOW[upto].id,false);
     try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}   // 새로고침해도 이 화면부터
     const note=document.createElement('div');
-    note.textContent=d.reached+' 단계까지 진행하신 기록을 불러왔어요. 이어서 진행해 주세요.';
+    note.textContent= wasDone ? '설치를 모두 마치신 기록을 불러왔어요.' : d.reached+' 단계까지 진행하신 기록을 불러왔어요. 이어서 진행해 주세요.';
     note.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:9999;background:#00294B;color:#fff;font-size:13.5px;font-weight:700;padding:11px 16px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.18);max-width:92%;text-align:center';
     document.body.append(note); setTimeout(()=>note.remove(),5000);
   }).catch(()=>{});
