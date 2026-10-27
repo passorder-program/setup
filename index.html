@@ -1669,6 +1669,7 @@ function applyStoreName(name){
     const dev={'윈도우':'windows','안드로이드':'android','iOS':'ios'}[d.device];
     if(dev && !S.device){ S.device=dev; applyDevice(dev); }
     if(d.printer==='완료' && !(S.print&&S.print.result)){ S.print=S.print||{}; S.print.result='ok'; }
+    if(d.when && !S.when) S.when=d.when;                        // 통화 희망 시간도 불러옴
     const wasDone = d.status==='완료';                           // 이미 모두 완료한 매장
     if(wasDone) S.finishedAt=S.finishedAt||now;
     save(); applyChecks(); applyLocks();
